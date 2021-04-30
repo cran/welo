@@ -1,0 +1,20 @@
+citHeader("When using welo in publications, please cite:")
+
+## R >= 2.8.0 passes package metadata to citation().
+if(!exists("meta") || is.null(meta)) meta <- packageDescription("welo")
+
+year <- 2021
+note <- sprintf("R package version %s.", meta$Version)
+
+citEntry(entry="Manual",
+         title = "welo: Weighted and Standard Elo Rates",
+         author = personList(as.person("Vincenzo Candila")),
+         year         = year,
+         note         = note,
+         textVersion = 
+         paste("Vincenzo Candila",
+               sprintf("(%s).", year),
+               "welo: Weighted and Standard Elo Rates.",
+	       note),
+	 header = "To cite the welo package, please use:"
+)
