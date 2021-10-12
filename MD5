@@ -1,8 +1,9 @@
-2e71229c307eba9476553d0cd872c037 *DESCRIPTION
+915100bc1515007209f161a77d5a25aa *DESCRIPTION
 a2b10f5975a4e7be426278070c4f7f13 *NAMESPACE
+c56dfc22e8309f7f59f3d07b2926fe76 *NEWS.md
 dfa40d50696db98c5bec98f5afd76412 *R/data.R
-752a8e4202670c82184884f21fffaa46 *R/functions.R
-61fdfcde27e33949b4ddc24a8e818553 *build/partial.rdb
+35eb3c114ac2d1d647c71eb73e1fc87e *R/functions.R
+9b820ecd019d21fb7275b11ac7b9337e *build/partial.rdb
 0c498ff361f8b811a6ea453f06119e95 *data/atp_2019.rda
 fdf6c52b53300470feaf2d348128bb06 *data/wta_2019.rda
 cb19787a78283209d4ac6de097603ebf *inst/CITATION
@@ -15,5 +16,5 @@ b2d7b441d4838f053b1f28ab863837c9 *man/betting.Rd
 e6647d125531bc770d33893c9aca9880 *man/clean.Rd
 c34c21460af453028fe9168884581cbf *man/random_betting.Rd
 9c789e77f0a2dedaf350edd9301eef54 *man/tennis_prob.Rd
-bf8f6780f6cedc24b449419e27628f39 *man/welofit.Rd
+74148ad281c7858b617cf8161a3a7efb *man/welofit.Rd
 4cf634f00e7c8bca1165ea02c400a13c *man/wta_2019.Rd

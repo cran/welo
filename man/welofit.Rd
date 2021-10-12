@@ -26,11 +26,9 @@ a former estimated list coming from the \code{\link{welofit}} function}
 \item{K}{\strong{optional} Scale factor determining how much the WElo and Elo rates change over time. Valid choices are:
 "Kovalchik" (by default), "Grand_Slam", "Surface_Hard", "Surface_Grass", "Surface_Clay" and, finally, a constant value \eqn{K}.
 The first option ("Kovalchik") is equal to what was suggested by \insertCite{kovalchik_2016;textual}{welo},
-Putting \eqn{K} to "Grand_Slam" lets the scale factor equal to the first option, with the difference that each Grand Slam match
-is multiplied by 1.1. Similarly, the choices "Surface_Hard", "Surface_Grass" and "Surface_Clay" make the scale factor
-equal to the first option but, in case of a match disputed on hard, grass or clay, respectively, the scale factor
-increases by 1.1. Finally, it can be any scalar value \eqn{K}. In this case, the scale factor is constant,
-indipendently of the number of matches played before the match \eqn{t}}
+Putting \eqn{K} to "Grand_Slam" lets the Kovalchik scale factor multiplied by 1.1, if the match is a Grand Slam match.
+Similarly, the choices "Surface_Hard", "Surface_Grass" and "Surface_Clay" make the Kovalchik scale factor
+increased by 1.1 if, respectively, the match is played on hard, grass or clay. Finally, \eqn{K} can be any scalar value, indipendently of the number of matches played before the match \eqn{t}}
 
 \item{CI}{\strong{optional} Confidence intervals for the WElo and Elo rates. Default to FALSE. If 'CI' is set to "TRUE", then the
 confidence intervals are calculated, according to the procedure explained by \insertCite{angelini2021weighted;textual}{welo}}
@@ -45,8 +43,9 @@ in the parameter 'x')}
 \value{
 \code{welofit} returns an list containing the following components:
 \itemize{
-\item results: The data.frame including a variety of variables, among which there are the estimated WElo and Elo rates ('WElo_i', 'WElo_j', 'Elo_i' and 'Elo_j', respectively),
-their lower and upper confidence intervals (if CI=TRUE), labelled as '_lb' and '_ub', respectively, and the probability of winning the match for player \eqn{i} (labelled as 'WElo_pi_hat' and
+\item results: The data.frame including a variety of variables, among which there are the estimated WElo and Elo rates, before and
+after the match \eqn{t}, for players \eqn{i} and \eqn{j},
+the lower and upper confidence intervals (if CI=TRUE) for the WElo and Elo rates, labelled as '_lb' and '_ub', respectively, and the probability of winning the match for player \eqn{i} (labelled as 'WElo_pi_hat' and
 'Elo_pi_hat', respectively, for the WElo and Elo models).
 \item matches: The number of matches analyzed.
 \item period: The sample period considered.
@@ -98,6 +97,11 @@ The scale factor \eqn{K_i(t)} is the same as the Elo model.
 data(atp_2019) 
 db_clean<-clean(atp_2019)
 res<-welofit(db_clean)
+# append new data
+db_clean_1<-db_clean[1:500,]
+db_clean_2<-db_clean[501:1200,]
+res_1<-welofit(db_clean_1)
+res_2<-welofit(res_1,new_data=db_clean_2)
 }
 }
 \references{
