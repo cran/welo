@@ -12,12 +12,11 @@ random_betting(
   bets = "Best_odds",
   B = 10000,
   start_oos = NULL,
-  end_oos = NULL,
-  values = "NO"
+  end_oos = NULL
 )
 }
 \arguments{
-\item{x}{List including the best odds and the players \eqn{i} and \eqn{j} obtained from the \code{\link{welofit}} function}
+\item{x}{an object of class 'welo', obtained from the \code{\link{welofit}} function}
 
 \item{r}{Vector or scalar identifying the threshold of the ratio between the estimated and the implied probability (see above)}
 
@@ -33,30 +32,28 @@ No bets will be placed on those matches where players have odds smaller than \eq
 \item{B}{\strong{optional} Number of replicates to calculate the overall mean ROI. Default to 10000}
 
 \item{start_oos}{\strong{optional} Character parameter denoting the starting year for the bets.
-If included (default to NULL), then the bets will be placed on matches starting in that year. It has to be formatted as "yyyy"}
+If included (default to NULL), then the bets will be placed on matches starting in that year. It has to be formatted as "YYYY"}
 
 \item{end_oos}{\strong{optional} Character parameter denoting the ending year for the bets.
 If included (default to NULL), then the bets will be placed on matches included in the period "start_oos/end_oos".
-It has to be formatted as "yyyy"}
-
-\item{values}{\strong{optional} If it is "YES", then \code{random_betting} returns the ROI for each replicate \eqn{B}. Otherwise, it returns the average. Default to "NO"}
+It has to be formatted as "YYYY"}
 }
 \value{
-By default, the mean of the ROI (in percentage) across the \eqn{B} values. Alternately, it returns the ROI for each \eqn{B} replicate
-(setting parameter 'values' to 'YES')
+A matrix reporting the number of bets and the mean of the ROI (in percentage) across the \eqn{B} values for every
+threshold r used
 }
 \description{
 Places bets on players \eqn{i} and \eqn{j} randomly chosen, among all the matches selected by
 the following strategy:
 by default, the amount of $1 is placed on the best odds (that is, the highest odds available) for player \eqn{i} for all
 the matches where it holds that
-\deqn{\frac{\hat{P}_{i,j}(t)}{q_{i,j}(t)} > r,}
-where \eqn{\hat{P}_{i,j}(t)} is the estimated probability (coming from the WElo or Elo model) that player \eqn{i} wins the match \eqn{t} against player \eqn{j}
+\deqn{\frac{\hat{p}_{i,j}(t)}{q_{i,j}(t)} > r,}
+where \eqn{\hat{p}_{i,j}(t)} is the estimated probability (coming from the WElo or Elo model) that player \eqn{i} wins the match \eqn{t} against player \eqn{j}
 and \eqn{q_{i,j}(t)} is its implied probability obtained as the reciprical of the Bet365 odds. The implied
 probability \eqn{q_{i,j}(t)} is assumed to be greater than \eqn{q}. If \eqn{q=0}, all the players are considered. If \eqn{q} increases,
 heavy longshot players are excluded.
 Once got the number of matches satisfying the previously described strategy, each player (\eqn{i} and \eqn{j}) on which
-place a bet is randomly selected. Then the ROI of this strategy is stored. Finally, the mean of the ROI
+place a bet is randomly selected. Then the Return-on-Investiment (ROI) of this strategy is stored. Finally, the mean of the ROI
 obtained from repeating this operation \eqn{B} times is reported.
 }
 \examples{
@@ -64,7 +61,7 @@ obtained from repeating this operation \eqn{B} times is reported.
 data(atp_2019) 
 db_clean<-clean(atp_2019)
 db_est<-welofit(db_clean)
-rand_bets<-random_betting(db_est,r=c(1.1,1.2,1.3),q=0.3,model="WELO",B=1000,values="NO")
+rand_bets<-random_betting(db_est,r=c(1.1,1.2,1.3),q=0.3,model="WELO",B=1000)
 rand_bets
 }
 }

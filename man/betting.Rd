@@ -17,7 +17,7 @@ betting(
 )
 }
 \arguments{
-\item{x}{List including the odds and players \eqn{i} and \eqn{j} obtained from the \code{\link{welofit}} function}
+\item{x}{an object of class 'welo', obtained from the \code{\link{welofit}} function}
 
 \item{r}{Vector or scalar identifying the threshold of the ratio between the estimated and the implied probability (see above)}
 
@@ -35,11 +35,11 @@ No bets will be placed on those matches where players have implied probabilities
 \item{alpha}{\strong{optional} Significance level for the boostrap confidence intervals. Default to 0.1}
 
 \item{start_oos}{\strong{optional} Character parameter denoting the starting year for the bets.
-If included (default to NULL), then the bets will be placed on matches starting in that year. It has to be formatted as "yyyy"}
+If included (default to NULL), then the bets will be placed on matches starting in that year. It has to be formatted as "YYYY"}
 
 \item{end_oos}{\strong{optional} Character parameter denoting the ending year for the bets.
 If included (default to NULL), then the bets will be placed on matches included in the period "start_oos/end_oos".
-It has to be formatted as "yyyy"}
+It has to be formatted as "YYYY"}
 }
 \value{
 A matrix including the number of bets placed, the Return-on-Investiment (ROI), expressed in percentage, and its boostrap confidence interval,
@@ -49,8 +49,8 @@ calculated using \eqn{R} replicates and the significance level \eqn{\alpha}.
 Places bets using the WElo and Elo probabilities, on the basis of two thresholds \eqn{r} and \eqn{q}, according to \insertCite{angelini2021weighted;textual}{welo}.
 By default, the amount of $1 is placed on the best odds (that is, the highest odds available) for player \eqn{i} for all
 the matches where it holds that
-\deqn{\frac{\hat{P}_{i,j}(t)}{q_{i,j}(t)} > r,}
-where \eqn{\hat{P}_{i,j}(t)} is the estimated probability (coming from the WElo or Elo model) that player \eqn{i} wins the match \eqn{t} against player \eqn{j}
+\deqn{\frac{\hat{p}_{i,j}(t)}{q_{i,j}(t)} > r,}
+where \eqn{\hat{p}_{i,j}(t)} is the estimated probability (coming from the WElo or Elo model) that player \eqn{i} wins the match \eqn{t} against player \eqn{j}
 and \eqn{q_{i,j}(t)} is its implied probability obtained as the reciprical of the Bet365 odds. The implied
 probability \eqn{q_{i,j}(t)} is assumed to be greater than \eqn{q}. If \eqn{q=0}, all the players are considered. If \eqn{q} increases,
 heavy longshot players are excluded.

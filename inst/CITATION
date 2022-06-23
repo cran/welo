@@ -3,7 +3,7 @@ citHeader("When using welo in publications, please cite:")
 ## R >= 2.8.0 passes package metadata to citation().
 if(!exists("meta") || is.null(meta)) meta <- packageDescription("welo")
 
-year <- 2021
+year <- 2022
 note <- sprintf("R package version %s.", meta$Version)
 
 citEntry(entry="Manual",

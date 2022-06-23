@@ -34,7 +34,7 @@ clean<-function(x,MNM=10,MRANK=500){
 
 ############# checks 
 
-if(class(x) != "data.frame") { stop("x must be a data.frame object. Please provide it in the correct form")}
+if(!inherits(x,"data.frame")) { stop("x must be a data.frame. Please provide it in the correct form")}
 
 ############# first dataset
 
@@ -194,7 +194,7 @@ x$NG_j/(x$NG_i+x$NG_j),
 x$NG_i/(x$NG_i+x$NG_j)
 )
 
-############# calculate the f(g) (in terms of set)
+############# calculate f(g) (in terms of set)
 
 x$f_s_i	<-	ifelse(x$Y_i==1,
 x$NS_i/(x$NS_i+x$NS_j),
@@ -206,13 +206,20 @@ x$NS_j/(x$NS_i+x$NS_j),
 x$NS_i/(x$NS_i+x$NS_j)
 )
 
-############# add the id column
+############# add id column
 
 x$id<-1:nrow(x)
 
 ############# order the matches
 
-x_data<-strptime(x[,"Date"], "%d/%m/%Y",tz="GMT")
+if(substr(x[1,"Date"],5,5)=="-"){
+type_of_data<-"%Y-%m-%d"
+} else {
+type_of_data<-"%d/%m/%Y"
+}
+
+
+x_data<-strptime(x[,"Date"], type_of_data,tz="GMT")
 
 if(any(is.na(x_data))){
 todrop<-which(is.na(x_data))
@@ -272,6 +279,43 @@ return(1/den)
 
 }
 
+
+#' Download data from http://www.tennis-data.co.uk/ 
+#'
+#' Imports ATP or WTA data from the site http://www.tennis-data.co.uk/
+#' @param YEAR Year to consider, in "YYYY" format. Only years from 2013 onwards are allowed
+#' @param Circuit Valid choices for Circuit are: "ATP" or "WTA"
+#' @return Data.frame for the YEAR and Circuit specified 
+#' @importFrom Rdpack reprompt
+#' @importFrom rio import
+#' @examples
+#' db<-tennis_data("2022","ATP") 
+#' head(db)
+#' @export
+
+############# Probability of winning
+
+tennis_data<-function(YEAR,Circuit){
+
+if(as.numeric(YEAR) < 2013) { stop("YEAR must be at least equal to 2013.")}
+
+if (Circuit=="WTA"){
+
+year_to_cons<-paste(YEAR,"w","/",YEAR,sep="")} else{
+
+year_to_cons<-paste(YEAR,"/",YEAR,sep="")}
+
+
+myurl<-paste("http://www.tennis-data.co.uk/",year_to_cons,".xlsx",sep="")
+
+db<-rio::import(myurl,na=c("","N/A"),sheet = YEAR)
+
+db$Date<-substr(db$Date,1,10)
+
+return(db)
+
+}
+
 #' Brier score
 #'
 #' Calculates the Brier score.
@@ -322,7 +366,7 @@ return((sum(acc)/N)*100)
 #' defines the rates (for player \eqn{i}) as:
 #' \deqn{E_{i}(t+1) = E_{i}(t) + K_i(t) \left[W_{i}(t)- \hat{p}_{i,j}(t) \right],}
 #' where \eqn{E_{i}(t)} is the Elo rate at time \eqn{t}, \eqn{W_{i}(t)} is the outcome (1 or 0) for player \eqn{i} in the match at time \eqn{t},
-#' \eqn{K_i(t)} is a scale factor, and \eqn{\hat{p}_{i,j}(t)} is the probability of winning for match at time t, calculated using \code{\link{tennis_prob}}.
+#' \eqn{K_i(t)} is a scale factor, and \eqn{\hat{p}_{i,j}(t)} is the probability of winning for match at time \eqn{t}, calculated using \code{\link{tennis_prob}}.
 #' The scale factor \eqn{K_i(t)} determines how much the rates change over time. By default, according to \insertCite{kovalchik_2016;textual}{welo}, it is defined as
 #' \deqn{K_i(t)=250/\left(N_i(t)+5\right)^{0.4},} 
 #' where \eqn{N_i(t)} is the number of matches disputed by player \eqn{i} up to time \eqn{t}. Alternately, \eqn{K_i(t)} can be multiplied by 1.1 if 
@@ -368,7 +412,7 @@ return((sum(acc)/N)*100)
 #' @param B **optional** Number of bootstrap samples used to calculate the confidence intervals. Default to 1000
 #' @param new_data **optional** New data, cleaned through the function \code{\link{clean}}, to append to an already estimated set of matches (included
 #' in the parameter 'x')
-#' @return \code{welofit} returns an list containing the following components:
+#' @return \code{welofit} returns an object of class 'welo', which is a list containing the following components:
 #' \itemize{
 #' 	\item results: The data.frame including a variety of variables, among which there are the estimated WElo and Elo rates, before and 
 #' after the match \eqn{t}, for players \eqn{i} and \eqn{j},
@@ -779,16 +823,176 @@ dataset=x
 )
 
 cat(utils::capture.output(res$loss),  sep = '\n')
+class(res)<-c("welo")
 return(res)
 }
+
+#' Plot for WElo and Elo rates
+#'
+#' Plots WElo and Elo rates.
+#' @param x An object of class 'welo', obtained after running the \code{\link{welofit}} function
+#' @param players A character vector including the players whose rates will be plotted. 
+#' The indication of the player has to be: 'Surname N.'. For instance, 'Roger Federer' will be
+#' included in the 'players' vector as 'Federer R.'
+#' @param rates **optional** Rates to be plotted. Valid choices are 'WElo' (by default) and 'Elo'
+#' @param SP **optional**  Starting points from which the rates originate. By default, SP is 1500
+#' @param line_width **optional** Line width, by default it is 1.5
+#' @return A ggplot2 plot
+#' @importFrom Rdpack reprompt
+#' @importFrom xts as.xts
+#' @importFrom xts merge.xts
+#' @importFrom ggplot2 ggplot
+#' @importFrom ggplot2 aes
+#' @importFrom ggplot2 geom_line
+#' @importFrom ggplot2 scale_x_date
+#' @importFrom ggplot2 ylab
+#' @importFrom reshape2 melt
+#' @examples
+#' db<-tennis_data("2022","ATP") 
+#' db_clean<-clean(db,MNM=5)
+#' res_welo<-welofit(db_clean)
+#' players<-c("Nadal R.","Djokovic N.","Berrettini M.","Sinner J.")
+#' welo_plot(res_welo,players,rates="WElo",SP=1500,line_width=1.5)
+#' @export
+
+welo_plot<-function(x,players,rates="WElo",SP=1500,line_width=1.5){
+
+db_p<-x$results
+
+### checks
+
+if(!inherits(x,"welo")) { stop("x must be a 'welo' object. Please run first the function 'welofit' and then the function 'welo_plot'")}
+
+full_list_players<-unique(c(db_p$P_i,db_p$P_j))
+
+if(!all(players %in% full_list_players)) { stop("At least one of the players within the vector 'players' is not included in the
+full sample. Please provide a correct list of players")}
+
+####
+
+N<-length(players)
+
+TT<-nrow(db_p)
+
+seq_date<-seq(
+as.Date(db_p$Date[1]), 
+as.Date(db_p$Date[TT]), 
+by = "1 day")
+
+db_i<-list()
+
+for (i in 1:N){
+
+################################ SUBSET
+
+db_sub<-subset(db_p,db_p$P_i==players[i]|db_p$P_j==players[i])
+
+################################ standard elo
+
+db_sub$ELO<-ifelse(db_sub$P_i==players[i],db_sub$Elo_i_after_match,db_sub$Elo_j_after_match)
+
+################################ weighted elo
+
+db_sub$WELO<-ifelse(db_sub$P_i==players[i],db_sub$WElo_i_after_match,db_sub$WElo_j_after_match)
+
+## First: create a data.frame with all the days
+full_date <- data.frame(date = seq_date)
+full_date <-  xts::as.xts(1:nrow(full_date),
+strptime(full_date[,1], "%Y-%m-%d", tz="GMT"))
+
+colnames(full_date)<-c("FD")
+
+inc_data<-strptime(unlist(lapply(db_sub$Date, as.character)), "%Y-%m-%d", tz="GMT")
+
+db_sub_i<-as.xts(cbind(db_sub$WELO,db_sub$ELO),inc_data)
+
+colnames(db_sub_i)<-c("WELO","ELO")
+
+############### merge the two datasets
+
+merged_db<-xts::merge.xts(full_date,db_sub_i,join='left')
+
+### let the first observation be equal to SP
+
+merged_db[1,2:3]<-SP
+
+### fill the missing values for each week
+
+for(tt in 2:nrow(merged_db)){
+merged_db$ELO[tt]<-ifelse(is.na(merged_db$ELO[tt]),merged_db$ELO[tt-1],merged_db$ELO[tt])
+merged_db$WELO[tt]<-ifelse(is.na(merged_db$WELO[tt]),merged_db$WELO[tt-1],merged_db$WELO[tt])
+}
+
+db_i[[i]]<-merged_db
+
+}
+
+if(rates=="WElo"){
+
+plot_data<-matrix(NA,ncol=(N),nrow=nrow(db_i[[1]]))
+
+colnames(plot_data)<-players
+
+for(i in 1:N){
+plot_data[,i]<-db_i[[i]][,2]
+}
+
+plot_data_f<-data.frame(Time=as.Date(stats::time(db_i[[1]])),plot_data)
+colnames(plot_data_f)[2:ncol(plot_data_f)]<-players
+
+data_long <- reshape2::melt(plot_data_f, 'Time')
+
+colnames(data_long)[c(2:3)]<-c("Players","WElo")
+
+Time<-WElo<-Players<-NULL
+
+final_plot<-ggplot2::ggplot(data_long,            
+               ggplot2::aes(x = Time,
+                   y = WElo,
+                   color = Players,
+					size = line_width)) +  ggplot2::geom_line(size = line_width) + ggplot2::scale_x_date(date_labels ="%m/%Y") +
+				  ggplot2::ylab("WElo rates") 
+
+} else {
+
+plot_data<-matrix(NA,ncol=(N),nrow=nrow(db_i[[1]]))
+
+colnames(plot_data)<-players
+
+for(i in 1:N){
+plot_data[,i]<-db_i[[i]][,3]
+}
+
+plot_data_f<-data.frame(Time=as.Date(stats::time(db_i[[1]])),plot_data)
+colnames(plot_data_f)[2:ncol(plot_data_f)]<-players
+
+data_long <- reshape2::melt(plot_data_f, 'Time')
+
+colnames(data_long)[c(2:3)]<-c("Players","Elo")
+
+Time<-Elo<-Players<-NULL
+
+final_plot<-ggplot2::ggplot(data_long,            
+               ggplot2::aes(x = Time,
+                   y = Elo,
+                   color = Players,
+				size = line_width)) +  ggplot2::geom_line(size = line_width) + ggplot2::scale_x_date(date_labels ="%m/%Y") +
+				ggplot2::ylab("Elo rates") 
+
+}
+
+return(final_plot)
+
+}
+
 
 #' Betting function
 #'
 #' Places bets using the WElo and Elo probabilities, on the basis of two thresholds \eqn{r} and \eqn{q}, according to \insertCite{angelini2021weighted;textual}{welo}. 
 #' By default, the amount of $1 is placed on the best odds (that is, the highest odds available) for player \eqn{i} for all 
 #' the matches where it holds that
-#' \deqn{\frac{\hat{P}_{i,j}(t)}{q_{i,j}(t)} > r,}
-#' where \eqn{\hat{P}_{i,j}(t)} is the estimated probability (coming from the WElo or Elo model) that player \eqn{i} wins the match \eqn{t} against player \eqn{j} 
+#' \deqn{\frac{\hat{p}_{i,j}(t)}{q_{i,j}(t)} > r,}
+#' where \eqn{\hat{p}_{i,j}(t)} is the estimated probability (coming from the WElo or Elo model) that player \eqn{i} wins the match \eqn{t} against player \eqn{j} 
 #' and \eqn{q_{i,j}(t)} is its implied probability obtained as the reciprical of the Bet365 odds. The implied
 #' probability \eqn{q_{i,j}(t)} is assumed to be greater than \eqn{q}. If \eqn{q=0}, all the players are considered. If \eqn{q} increases,
 #' heavy longshot players are excluded.
@@ -796,7 +1000,7 @@ return(res)
 #' @return A matrix including the number of bets placed, the Return-on-Investiment (ROI), expressed in percentage, and its boostrap confidence interval, 
 #' calculated using \eqn{R} replicates and the significance level \eqn{\alpha}.
 #' @importFrom Rdpack reprompt
-#' @param x List including the odds and players \eqn{i} and \eqn{j} obtained from the \code{\link{welofit}} function
+#' @param x an object of class 'welo', obtained from the \code{\link{welofit}} function
 #' @param r Vector or scalar identifying the threshold of the ratio between the estimated and the implied probability (see above)
 #' @param q Scalar parameter used to exclude the heavy underdogs signalled by Bet365 bookmaker. 
 #' No bets will be placed on those matches where players have implied probabilities smaller than \eqn{q}
@@ -807,10 +1011,10 @@ return(res)
 #' @param R **optional** Number of bootstrap replicates to calculate the confidence intervals. Default to 2000
 #' @param alpha **optional** Significance level for the boostrap confidence intervals. Default to 0.1
 #' @param start_oos **optional** Character parameter denoting the starting year for the bets.
-#' If included (default to NULL), then the bets will be placed on matches starting in that year. It has to be formatted as "yyyy"
+#' If included (default to NULL), then the bets will be placed on matches starting in that year. It has to be formatted as "YYYY"
 #' @param end_oos **optional** Character parameter denoting the ending year for the bets. 
 #' If included (default to NULL), then the bets will be placed on matches included in the period "start_oos/end_oos". 
-#' It has to be formatted as "yyyy"
+#' It has to be formatted as "YYYY"
 #' @examples
 #' \donttest{
 #' data(atp_2019) 
@@ -824,6 +1028,10 @@ return(res)
 ## Betting function
 
 betting<-function(x,r,q,model,bets="Best_odds",R=2000,alpha=0.10,start_oos=NULL,end_oos=NULL){
+
+### checks
+
+if(!inherits(x,"welo")) { stop("x must be a 'welo' object. Please run first the function 'welofit' and then the function 'betting'")}
 
 #### define the dataset
 
@@ -1002,18 +1210,18 @@ return(tab)
 #' the following strategy:
 #' by default, the amount of $1 is placed on the best odds (that is, the highest odds available) for player \eqn{i} for all 
 #' the matches where it holds that
-#' \deqn{\frac{\hat{P}_{i,j}(t)}{q_{i,j}(t)} > r,}
-#' where \eqn{\hat{P}_{i,j}(t)} is the estimated probability (coming from the WElo or Elo model) that player \eqn{i} wins the match \eqn{t} against player \eqn{j} 
+#' \deqn{\frac{\hat{p}_{i,j}(t)}{q_{i,j}(t)} > r,}
+#' where \eqn{\hat{p}_{i,j}(t)} is the estimated probability (coming from the WElo or Elo model) that player \eqn{i} wins the match \eqn{t} against player \eqn{j} 
 #' and \eqn{q_{i,j}(t)} is its implied probability obtained as the reciprical of the Bet365 odds. The implied
 #' probability \eqn{q_{i,j}(t)} is assumed to be greater than \eqn{q}. If \eqn{q=0}, all the players are considered. If \eqn{q} increases,
 #' heavy longshot players are excluded.
 #' Once got the number of matches satisfying the previously described strategy, each player (\eqn{i} and \eqn{j}) on which
-#' place a bet is randomly selected. Then the ROI of this strategy is stored. Finally, the mean of the ROI 
+#' place a bet is randomly selected. Then the Return-on-Investiment (ROI) of this strategy is stored. Finally, the mean of the ROI 
 #' obtained from repeating this operation \eqn{B} times is reported.
-#' @return By default, the mean of the ROI (in percentage) across the \eqn{B} values. Alternately, it returns the ROI for each \eqn{B} replicate 
-#' (setting parameter 'values' to 'YES')
+#' @return A matrix reporting the number of bets and the mean of the ROI (in percentage) across the \eqn{B} values for every 
+#' threshold r used 
 #' @importFrom Rdpack reprompt
-#' @param x List including the best odds and the players \eqn{i} and \eqn{j} obtained from the \code{\link{welofit}} function
+#' @param x an object of class 'welo', obtained from the \code{\link{welofit}} function
 #' @param r Vector or scalar identifying the threshold of the ratio between the estimated and the implied probability (see above)
 #' @param q Scalar parameter used to exclude the heavy underdogs signalled by B365 bookmaker.
 #' No bets will be placed on those matches where players have odds smaller than \eqn{q}
@@ -1023,24 +1231,27 @@ return(tab)
 #' "B365_odds" are the Bet365 odds
 #' @param B **optional** Number of replicates to calculate the overall mean ROI. Default to 10000
 #' @param start_oos **optional** Character parameter denoting the starting year for the bets. 
-#' If included (default to NULL), then the bets will be placed on matches starting in that year. It has to be formatted as "yyyy"
+#' If included (default to NULL), then the bets will be placed on matches starting in that year. It has to be formatted as "YYYY"
 #' @param end_oos **optional** Character parameter denoting the ending year for the bets. 
 #' If included (default to NULL), then the bets will be placed on matches included in the period "start_oos/end_oos". 
-#' It has to be formatted as "yyyy"
-#' @param values **optional** If it is "YES", then \code{random_betting} returns the ROI for each replicate \eqn{B}. Otherwise, it returns the average. Default to "NO"
+#' It has to be formatted as "YYYY"
 #' @examples
 #' \donttest{
 #' data(atp_2019) 
 #' db_clean<-clean(atp_2019)
 #' db_est<-welofit(db_clean)
-#' rand_bets<-random_betting(db_est,r=c(1.1,1.2,1.3),q=0.3,model="WELO",B=1000,values="NO")
+#' rand_bets<-random_betting(db_est,r=c(1.1,1.2,1.3),q=0.3,model="WELO",B=1000)
 #' rand_bets
 #' }
 #' @export
 
 ## Random betting function
 
-random_betting<-function(x,r,q,model,bets="Best_odds",B=10000,start_oos=NULL,end_oos=NULL,values="NO"){
+random_betting<-function(x,r,q,model,bets="Best_odds",B=10000,start_oos=NULL,end_oos=NULL){
+
+### checks
+
+if(!inherits(x,"welo")) { stop("x must be a 'welo' object. Please run first the function 'welofit' and then the function 'random_betting'")}
 
 #### define the dataset
 
@@ -1225,10 +1436,7 @@ colnames(tab)<-c("r","# Bets","ROI(%)")
 }
 cat(utils::capture.output(tab),  sep = '\n')
 
-if (values=="NO"){
 return(tab)
-} else {
-return(ROI)
-}
+
 }
 

@@ -41,7 +41,7 @@ confidence intervals are calculated, according to the procedure explained by \in
 in the parameter 'x')}
 }
 \value{
-\code{welofit} returns an list containing the following components:
+\code{welofit} returns an object of class 'welo', which is a list containing the following components:
 \itemize{
 \item results: The data.frame including a variety of variables, among which there are the estimated WElo and Elo rates, before and
 after the match \eqn{t}, for players \eqn{i} and \eqn{j},
@@ -61,7 +61,7 @@ Calculates the WElo and Elo rates according to \insertCite{angelini2021weighted;
 defines the rates (for player \eqn{i}) as:
 \deqn{E_{i}(t+1) = E_{i}(t) + K_i(t) \left[W_{i}(t)- \hat{p}_{i,j}(t) \right],}
 where \eqn{E_{i}(t)} is the Elo rate at time \eqn{t}, \eqn{W_{i}(t)} is the outcome (1 or 0) for player \eqn{i} in the match at time \eqn{t},
-\eqn{K_i(t)} is a scale factor, and \eqn{\hat{p}_{i,j}(t)} is the probability of winning for match at time t, calculated using \code{\link{tennis_prob}}.
+\eqn{K_i(t)} is a scale factor, and \eqn{\hat{p}_{i,j}(t)} is the probability of winning for match at time \eqn{t}, calculated using \code{\link{tennis_prob}}.
 The scale factor \eqn{K_i(t)} determines how much the rates change over time. By default, according to \insertCite{kovalchik_2016;textual}{welo}, it is defined as
 \deqn{K_i(t)=250/\left(N_i(t)+5\right)^{0.4},}
 where \eqn{N_i(t)} is the number of matches disputed by player \eqn{i} up to time \eqn{t}. Alternately, \eqn{K_i(t)} can be multiplied by 1.1 if
