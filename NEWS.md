@@ -1,3 +1,8 @@
+# welo 0.1.3
+
+* Introduced rank plot via rank_plot function
+* Bugs fixed
+
 # welo 0.1.2
 
 * Included the possibility of downloading data from http://www.tennis-data.co.uk/ via tennis_data function

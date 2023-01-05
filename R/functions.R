@@ -461,6 +461,10 @@ colnames(x)=="f_g_i"
 
 if((W != "GAMES")&(W != "SETS")) { stop(cat("#Warning:\n Valid choices for the parameter 'W' are currently 'GAMES' and 'SETS' \n"))}
 
+if(any(colnames(x)=="Tier")) {
+colnames(x)[which(colnames(x)=="Tier")]<-"Series"
+}
+
 ################################# begin
 
 if(is.null(new_data)){
@@ -984,6 +988,130 @@ final_plot<-ggplot2::ggplot(data_long,
 return(final_plot)
 
 }
+
+#' Plot for official (ATP or WTA) rates
+#'
+#' Plots the official (ATP or WTA) rates.
+#' @param x An object of class 'welo', obtained after running the \code{\link{welofit}} function
+#' @param players A character vector including the players whose rates will be plotted. 
+#' The indication of the player has to be: 'Surname N.'. For instance, 'Roger Federer' will be
+#' included in the 'players' vector as 'Federer R.'
+#' @param line_width **optional** Line width, by default it is 1.5
+#' @param nbreaks **optional** Number of breaks for y-axis, by default it is 1
+#' @return A ggplot2 plot
+#' @importFrom Rdpack reprompt
+#' @importFrom xts as.xts
+#' @importFrom xts merge.xts
+#' @importFrom ggplot2 ggplot
+#' @importFrom ggplot2 aes
+#' @importFrom ggplot2 geom_line
+#' @importFrom ggplot2 scale_x_date
+#' @importFrom ggplot2 ylab
+#' @importFrom reshape2 melt
+#' @examples
+#' db<-tennis_data("2022","ATP") 
+#' db_clean<-clean(db,MNM=5)
+#' res_welo<-welofit(db_clean)
+#' players<-c("Nadal R.","Djokovic N.","Berrettini M.","Sinner J.")
+#' rank_plot(res_welo,players,line_width=1.5)
+#' @export
+
+
+rank_plot<-function(x,players,line_width=1.5,nbreaks=1){
+
+db_p<-x$dataset
+
+### checks
+
+if(!inherits(x,"welo")) { stop("x must be a 'welo' object. Please run first the function 'welofit' and then the function 'welo_plot'")}
+
+full_list_players<-unique(c(db_p$P_i,db_p$P_j))
+
+if(!all(players %in% full_list_players)) { stop("At least one of the players within the vector 'players' is not included in the
+full sample. Please provide a correct list of players")}
+
+####
+
+N<-length(players)
+
+TT<-nrow(db_p)
+
+seq_date<-seq(
+as.Date(db_p$Date[1]), 
+as.Date(db_p$Date[TT]), 
+by = "1 day")
+
+db_i<-list()
+
+for (i in 1:N){
+
+################################ SUBSET
+
+db_sub<-subset(db_p,db_p$P_i==players[i]|db_p$P_j==players[i])
+
+db_sub$RANK<-ifelse(db_sub$P_i==players[i]&db_sub$Y_i==1|
+db_sub$P_j==players[i]&db_sub$Y_j==1,db_sub$WRank,db_sub$LRank)
+
+## First: create a data.frame with all the days
+full_date <- data.frame(date = seq_date)
+full_date <-  xts::as.xts(1:nrow(full_date),
+strptime(full_date[,1], "%Y-%m-%d", tz="GMT"))
+
+colnames(full_date)<-c("FD")
+
+inc_data<-strptime(unlist(lapply(db_sub$Date, as.character)), "%Y-%m-%d", tz="GMT")
+
+db_sub_i<-xts::as.xts(cbind(db_sub$RANK),inc_data)
+
+colnames(db_sub_i)<-c("RANK")
+
+############### merge the two datasets
+
+merged_db<-xts::merge.xts(full_date,db_sub_i,join='left')
+
+### fill the missing values for each week
+
+merged_db[1,2]<-db_sub$RANK[1]
+
+for(tt in 2:nrow(merged_db)){
+merged_db$RANK[tt]<-ifelse(is.na(merged_db$RANK[tt]),merged_db$RANK[tt-1],merged_db$RANK[tt])
+}
+
+db_i[[i]]<-merged_db
+
+}
+
+
+plot_data<-matrix(NA,ncol=(N),nrow=nrow(db_i[[1]]))
+
+colnames(plot_data)<-players
+
+for(i in 1:N){
+plot_data[,i]<-db_i[[i]][,2]
+}
+
+plot_data_f<-data.frame(Time=as.Date(stats::time(db_i[[1]])),plot_data)
+colnames(plot_data_f)[2:ncol(plot_data_f)]<-players
+
+data_long <- reshape2::melt(plot_data_f, 'Time')
+
+colnames(data_long)[c(2:3)]<-c("Players","Rank")
+
+Time<-Rank<-Players<-NULL
+
+final_plot<-ggplot2::ggplot(data_long,            
+               ggplot2::aes(x = Time,
+                   y = Rank,
+                   color = Players,
+					size = line_width)) +  ggplot2::geom_line(size = line_width) + ggplot2::scale_x_date(date_labels ="%m/%Y") +
+				  	ggplot2::ylab("Rank")  +
+					ggplot2::scale_y_continuous(trans = "reverse", breaks=seq(min(data_long$Rank),max(data_long$Rank),nbreaks))
+					
+return(final_plot)
+
+}
+
+
 
 
 #' Betting function
