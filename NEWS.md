@@ -1,3 +1,7 @@
+# welo 0.1.4
+
+* Bugs fixed
+
 # welo 0.1.3
 
 * Introduced rank plot via rank_plot function

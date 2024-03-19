@@ -1189,7 +1189,7 @@ x$bet_odds_j<-x$Odds_j
 #### verify if there are the specifications for the out-of-sample periods
 
 if(!missing(start_oos)){
-x$year<-as.numeric(substring(x$Date,7,10))
+x$year<-as.numeric(substring(x$Date,1,4))
 first_match<-xts::first(which(x$year==start_oos))
 last_match<-xts::last(which(x$year==end_oos))
 x<-x[first_match:last_match,]
